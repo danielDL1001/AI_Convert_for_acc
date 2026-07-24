@@ -1,8 +1,10 @@
 # MP3/MP4 to AAC Converter
 
-Conversor de linha de comando **em massa** que transforma arquivos `.mp3` e `.mp4` em `.aac`, preservando o nome original de cada arquivo e a **estrutura de subpastas**. Usa `ffmpeg` por baixo dos panos.
+Conversor de linha de comando **em massa** que transforma **qualquer arquivo de áudio ou vídeo** (mp3, wav, flac, mp4, mkv, mov, avi, etc.) em `.aac`, preservando o nome original de cada arquivo e a **estrutura de subpastas**. Usa `ffmpeg` por baixo dos panos, que reconhece o formato automaticamente pelo conteúdo do arquivo (não pela extensão).
 
-Se a origem for um `.mp4`, apenas o áudio é extraído — o vídeo é descartado automaticamente.
+Se a origem for um vídeo, apenas o áudio é extraído — o vídeo é descartado automaticamente.
+
+Arquivos que não são áudio/vídeo (ex: `.txt`, `.jpg`) são detectados pelo próprio ffmpeg e reportados como erro, sem travar a conversão dos demais. O único arquivo sempre ignorado é o próprio `.aac` (pra não reconverter o que já foi gerado), além de arquivos de sistema como `.DS_Store`.
 
 ## Requisitos
 
@@ -46,9 +48,9 @@ input/
 ├── legal/
 │   └── gentefina/
 │       ├── audio1.mp3
-│       └── video1.mp4
+│       └── video1.mkv
 └── outrapasta/
-    └── audio2.mp3
+    └── audio2.wav
 ```
 
 Rode:
@@ -67,6 +69,8 @@ output/
 └── outrapasta/
     └── audio2.aac
 ```
+
+> O `.aac` é gerado com o mesmo nome do arquivo original, só trocando a extensão — não importa se a origem era `.mp3`, `.wav`, `.mkv`, `.mov`, etc.
 
 Ou seja, `input/legal/gentefina/` gera `output/legal/gentefina/`, não importa quantos níveis de subpasta você tenha.
 
@@ -97,7 +101,7 @@ python3 main.py --help
 ## Exemplo de saída
 
 ```
-🎵 2 arquivo(s) encontrado(s) (2 mp3, 0 mp4)
+🎵 2 arquivo(s) encontrado(s) (2 mp3, 0 mp4, 0 mkv)
 📂 Entrada: /home/usuario/mp3-to-aac/input
 📁 Saída:   /home/usuario/mp3-to-aac/output
 🎚️  Bitrate: 192k

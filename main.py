@@ -10,8 +10,8 @@ def criar_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="mp3-to-aac",
         description=(
-            "Converte arquivos MP3/MP4 para AAC usando ffmpeg, preservando a "
-            "estrutura de subpastas entre 'input/' e 'output/'."
+            "Converte qualquer arquivo de áudio ou vídeo para AAC usando ffmpeg, "
+            "preservando a estrutura de subpastas entre 'input/' e 'output/'."
         ),
     )
     parser.add_argument(
@@ -62,13 +62,16 @@ def main():
     arquivos = mapear_arquivos(pasta_entrada, pasta_saida)
 
     if not arquivos:
-        print(f"⚠️  Nenhum arquivo .mp3/.mp4 encontrado em: {pasta_entrada}")
+        print(f"⚠️  Nenhum arquivo encontrado em: {pasta_entrada}")
         sys.exit(0)
 
-    qtd_mp3 = sum(1 for a in arquivos if a.origem.suffix.lower() == ".mp3")
-    qtd_mp4 = sum(1 for a in arquivos if a.origem.suffix.lower() == ".mp4")
+    contagem_por_extensao: dict[str, int] = {}
+    for a in arquivos:
+        ext = a.origem.suffix.lower().lstrip(".") or "sem extensão"
+        contagem_por_extensao[ext] = contagem_por_extensao.get(ext, 0) + 1
+    resumo_extensoes = ", ".join(f"{qtd} {ext}" for ext, qtd in sorted(contagem_por_extensao.items()))
 
-    print(f"🎵 {len(arquivos)} arquivo(s) encontrado(s) ({qtd_mp3} mp3, {qtd_mp4} mp4)")
+    print(f"🎵 {len(arquivos)} arquivo(s) encontrado(s) ({resumo_extensoes})")
     print(f"📂 Entrada: {pasta_entrada}")
     print(f"📁 Saída:   {pasta_saida}")
     print(f"🎚️  Bitrate: {args.bitrate}\n")
