@@ -1,12 +1,12 @@
 import shutil
+import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
 
-# Arquivos que NUNCA devem ser tratados como entrada a converter:
-# - .aac: já é o formato de saída (evita reconverter o que já foi gerado)
-# - arquivos ocultos/de sistema comuns, caso o usuário tenha alguma sincronização
-EXTENSOES_IGNORADAS = (".aac",)
+# Arquivos de sistema/ocultos que NUNCA devem ser tratados como entrada.
+# Obs.: arquivos .aac agora SÃO aceitos como entrada: eles são apenas copiados
+# para o output, sem reconverter.
 ARQUIVOS_IGNORADOS = {".ds_store", "thumbs.db", "desktop.ini"}
 
 
@@ -15,14 +15,53 @@ def ffmpeg_disponivel() -> bool:
     return shutil.which("ffmpeg") is not None
 
 
+def ffprobe_disponivel() -> bool:
+    """Verifica se o ffprobe (que acompanha o ffmpeg) está acessível no PATH."""
+    return shutil.which("ffprobe") is not None
+
+
+def codec_audio(caminho: Path) -> str | None:
+    """
+    Retorna o codec do primeiro stream de áudio do arquivo (ex: 'aac', 'mp3'),
+    ou None se não for possível detectar (sem ffprobe, sem áudio, arquivo inválido...).
+    """
+    try:
+        resultado = subprocess.run(
+            [
+                "ffprobe",
+                "-v", "error",
+                "-select_streams", "a:0",
+                "-show_entries", "stream=codec_name",
+                "-of", "default=nw=1:nk=1",
+                str(caminho),
+            ],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            timeout=30,
+        )
+    except (subprocess.SubprocessError, OSError):
+        return None
+
+    return resultado.stdout.strip().splitlines()[0] if resultado.stdout.strip() else None
+
+
+def e_aac_puro(caminho: Path) -> bool:
+    """True se o arquivo já é um .aac (mesmo formato de saída): basta copiar."""
+    return caminho.suffix.lower() == ".aac"
+
+
+def tem_audio_aac(caminho: Path) -> bool:
+    """True se o áudio do arquivo já está codificado em AAC (ex: .m4a, .mp4)."""
+    return codec_audio(caminho) == "aac"
+
+
 def _e_arquivo_valido(arquivo: Path) -> bool:
-    """Filtra arquivos ocultos/de sistema e o próprio .aac, aceitando qualquer outro
-    arquivo (áudio ou vídeo) para que o ffmpeg tente a conversão."""
+    """Filtra arquivos ocultos/de sistema, aceitando qualquer outro arquivo
+    (áudio ou vídeo, inclusive .aac) para que o conversor decida o que fazer."""
     if arquivo.name.lower() in ARQUIVOS_IGNORADOS:
         return False
     if arquivo.name.startswith("."):
-        return False
-    if arquivo.suffix.lower() in EXTENSOES_IGNORADAS:
         return False
     return True
 
@@ -39,7 +78,7 @@ def mapear_arquivos(
 ) -> list[ArquivoParaConverter]:
     """
     Varre 'pasta_entrada' recursivamente e, para cada arquivo encontrado (qualquer
-    áudio ou vídeo, exceto .aac e arquivos de sistema), calcula qual seria a pasta
+    áudio ou vídeo, exceto arquivos de sistema), calcula qual seria a pasta
     de destino correspondente dentro de 'pasta_saida_raiz', espelhando a mesma
     estrutura de subpastas.
 
@@ -66,7 +105,7 @@ def mapear_arquivos(
 def listar_arquivos(caminho: Path) -> list[Path]:
     """
     Retorna uma lista de arquivos a converter, sem se preocupar com estrutura.
-    - Se 'caminho' for um arquivo válido (não .aac/sistema), retorna só ele.
+    - Se 'caminho' for um arquivo válido (não de sistema), retorna só ele.
     - Se 'caminho' for uma pasta, retorna todos os arquivos válidos encontrados (recursivo).
 
     Mantido para compatibilidade (uso com um único arquivo de entrada).

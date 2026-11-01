@@ -3,7 +3,12 @@ import sys
 from pathlib import Path
 
 from src.converter import converter_mapeados
-from src.utils import ffmpeg_disponivel, mapear_arquivos, formatar_tamanho
+from src.utils import (
+    ffmpeg_disponivel,
+    ffprobe_disponivel,
+    mapear_arquivos,
+    formatar_tamanho,
+)
 
 
 def criar_parser() -> argparse.ArgumentParser:
@@ -11,7 +16,8 @@ def criar_parser() -> argparse.ArgumentParser:
         prog="mp3-to-aac",
         description=(
             "Converte qualquer arquivo de áudio ou vídeo para AAC usando ffmpeg, "
-            "preservando a estrutura de subpastas entre 'input/' e 'output/'."
+            "preservando a estrutura de subpastas entre 'input/' e 'output/'. "
+            "Arquivos que já são AAC não são reconvertidos, apenas copiados."
         ),
     )
     parser.add_argument(
@@ -30,7 +36,7 @@ def criar_parser() -> argparse.ArgumentParser:
         "-b", "--bitrate",
         type=str,
         default="192k",
-        help="Bitrate do áudio de saída (padrão: 192k)",
+        help="Bitrate do áudio de saída (padrão: 192k). Ignorado para arquivos que já são AAC.",
     )
     parser.add_argument(
         "--sobrescrever",
@@ -50,6 +56,10 @@ def main():
         print("                brew install ffmpeg      (macOS)")
         print("   Ou baixe em: https://ffmpeg.org/download.html  (Windows)")
         sys.exit(1)
+
+    if not ffprobe_disponivel():
+        print("⚠️  ffprobe não encontrado: não será possível detectar AAC dentro de .m4a/.mp4.")
+        print("   Apenas arquivos .aac serão copiados; os demais serão reconvertidos.\n")
 
     pasta_entrada = Path(args.entrada).expanduser().resolve()
     pasta_saida = Path(args.saida).expanduser().resolve()
@@ -82,7 +92,10 @@ def main():
         if resultado.sucesso:
             tamanho = formatar_tamanho(resultado.destino.stat().st_size)
             caminho_relativo_destino = resultado.destino.relative_to(pasta_saida)
-            print(f"{prefixo} ✅ {caminho_relativo_origem} -> {caminho_relativo_destino} ({tamanho})")
+            if resultado.copiado:
+                print(f"{prefixo} 📋 {caminho_relativo_origem} -> {caminho_relativo_destino} ({tamanho}, já era AAC: copiado)")
+            else:
+                print(f"{prefixo} ✅ {caminho_relativo_origem} -> {caminho_relativo_destino} ({tamanho})")
         else:
             print(f"{prefixo} ❌ {caminho_relativo_origem}: {resultado.erro}")
 
@@ -93,10 +106,14 @@ def main():
         on_progresso=mostrar_progresso,
     )
 
-    sucesso = sum(1 for r in resultados if r.sucesso)
-    falhas = len(resultados) - sucesso
+    copiados = sum(1 for r in resultados if r.sucesso and r.copiado)
+    convertidos = sum(1 for r in resultados if r.sucesso and not r.copiado)
+    falhas = len(resultados) - copiados - convertidos
 
-    print(f"\n🏁 Concluído: {sucesso} convertido(s), {falhas} erro(s)/pulado(s).")
+    print(
+        f"\n🏁 Concluído: {convertidos} convertido(s), {copiados} copiado(s) (já eram AAC), "
+        f"{falhas} erro(s)/pulado(s)."
+    )
 
 
 if __name__ == "__main__":
