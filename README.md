@@ -1,3 +1,9 @@
+> [!NOTE]
+> **AI-Generated Content**
+>
+> **Transparency Note:** The structure and code in this repository were created with the assistance of AI tools (such as ChatGPT, Claude, or Copilot) and manually reviewed.
+
+
 # MP3/MP4 to AAC Converter
 
 Conversor de linha de comando **em massa** que transforma **qualquer arquivo de áudio ou vídeo** (mp3, wav, flac, mp4, mkv, mov, avi, etc.) em `.aac`, preservando o nome original de cada arquivo e a **estrutura de subpastas**. Usa `ffmpeg` por baixo dos panos, que reconhece o formato automaticamente pelo conteúdo do arquivo (não pela extensão).
