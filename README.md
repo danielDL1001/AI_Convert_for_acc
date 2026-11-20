@@ -1,7 +1,7 @@
 > [!NOTE]
 > **AI-Generated Content**
 >
-> **Transparency Note:** The structure and code in this repository were created with the assistance of AI tools (such as ChatGPT, Claude, or Copilot) and manually reviewed.
+>  **Nota de Transparência:** A estrutura e o código deste repositório foram gerados com o auxílio de Inteligência Artificial (ex: ChatGPT, Claude, Copilot) e revisados manualmente.
 
 
 # MP3/MP4 to AAC Converter
